@@ -3,11 +3,13 @@ import { Copy, Save, Settings } from 'lucide-react';
 import SettingsPanel from './SettingsPanel';
 import CustomRuleForm from './CustomRuleForm';
 import { systemRules, ruleOrder, defaultActiveRules } from './privacyRules';
+import { llmPrivacyFilter } from '../../utils/llmService';
 
 const TextFilter = () => {
   // 核心状态
   const [inputText, setInputText] = useState('');
   const [filteredText, setFilteredText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // 面板显示状态
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -18,27 +20,99 @@ const TextFilter = () => {
   const [customRules, setCustomRules] = useState([]);
   const [activeRules, setActiveRules] = useState(defaultActiveRules);
 
+  // LLM状态
+  const [isLLMEnabled, setIsLLMEnabled] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('bert-tiny');
+  const [llmStatus, setLLMStatus] = useState({ initialized: false, initializing: false });
+  const [processingMode, setProcessingMode] = useState('hybrid'); // 'llm-only', 'hybrid', 'rules-fallback'
+
   // 文本过滤处理
-  const handleTextChange = useCallback((text) => {
+  const handleTextChange = useCallback(async (text) => {
     setInputText(text);
+    setIsProcessing(true);
+    
+    try {
+      let processed = text;
+
+      // 根据处理模式选择过滤策略
+      if (isLLMEnabled && llmStatus.initialized) {
+        switch (processingMode) {
+          case 'llm-only':
+            // 仅使用LLM过滤
+            processed = await llmPrivacyFilter.filterText(text);
+            break;
+          
+          case 'hybrid':
+            // 混合模式：先规则过滤，再LLM增强
+            processed = applyRuleBasedFiltering(text);
+            processed = await llmPrivacyFilter.filterText(processed);
+            break;
+          
+          case 'rules-fallback':
+            // LLM优先，规则兜底
+            try {
+              processed = await llmPrivacyFilter.filterText(text);
+            } catch (error) {
+              console.warn('LLM filtering failed, falling back to rules:', error);
+              processed = applyRuleBasedFiltering(text);
+            }
+            break;
+          
+          default:
+            processed = applyRuleBasedFiltering(text);
+        }
+      } else {
+        // 仅使用规则过滤
+        processed = applyRuleBasedFiltering(text);
+      }
+
+      setFilteredText(processed);
+    } catch (error) {
+      console.error('Text filtering error:', error);
+      // 发生错误时回退到原始规则过滤
+      setFilteredText(applyRuleBasedFiltering(text));
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isLLMEnabled, llmStatus.initialized, processingMode, systemRules, customRules, activeRules]);
+
+  // 规则过滤逻辑（提取为单独函数）
+  const applyRuleBasedFiltering = useCallback((text) => {
     let processed = text;
     
-      // 首先处理系统规则
-      ruleOrder.forEach(ruleKey => {
-        if (activeRules[ruleKey] && systemRules[ruleKey]) {
-          processed = processed.replace(systemRules[ruleKey].pattern, systemRules[ruleKey].replacement);
-        }
-      });
-      
-      // 然后处理自定义规则
-      customRules.forEach(rule => {
-        if (activeRules[rule.name]) {
-          processed = processed.replace(rule.pattern, rule.replacement);
-        }
-      });
+    // 首先处理系统规则
+    ruleOrder.forEach(ruleKey => {
+      if (activeRules[ruleKey] && systemRules[ruleKey]) {
+        processed = processed.replace(systemRules[ruleKey].pattern, systemRules[ruleKey].replacement);
+      }
+    });
     
-    setFilteredText(processed);
+    // 然后处理自定义规则
+    customRules.forEach(rule => {
+      if (activeRules[rule.name]) {
+        processed = processed.replace(rule.pattern, rule.replacement);
+      }
+    });
+
+    return processed;
   }, [systemRules, customRules, activeRules]);
+
+  // LLM相关处理函数
+  const handleToggleLLM = (enabled) => {
+    setIsLLMEnabled(enabled);
+  };
+
+  const handleModelChange = (modelId) => {
+    setSelectedModel(modelId);
+  };
+
+  const handleLLMStatusChange = (status) => {
+    setLLMStatus(status);
+  };
+
+  const handleProcessingModeChange = (mode) => {
+    setProcessingMode(mode);
+  };
 
   // 规则管理处理函数
   const handleToggleRule = (ruleKey, isEnabled) => {
@@ -155,8 +229,15 @@ const TextFilter = () => {
                 <span>复制</span>
               </button>
             </div>
-            <div className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-md overflow-auto whitespace-pre-wrap">
-              {filteredText || '过滤后的文本将显示在这里...'}
+            <div className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-md overflow-auto whitespace-pre-wrap relative">
+              {isProcessing ? (
+                <div className="flex items-center justify-center text-gray-500">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mr-2"></div>
+                  正在处理文本...
+                </div>
+              ) : (
+                filteredText || '过滤后的文本将显示在这里...'
+              )}
             </div>
           </div>
         </div>
@@ -164,8 +245,14 @@ const TextFilter = () => {
 
       <footer className="bg-white shadow-sm px-4 py-3">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="text-sm text-gray-600">
-            已启用 {Object.values(activeRules).filter(Boolean).length} 个过滤规则
+          <div className="text-sm text-gray-600 flex items-center space-x-4">
+            <span>已启用 {Object.values(activeRules).filter(Boolean).length} 个过滤规则</span>
+            {isLLMEnabled && (
+              <span className="flex items-center space-x-1">
+                <span className={`inline-block w-2 h-2 rounded-full ${llmStatus.initialized ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
+                <span>AI过滤: {llmStatus.initialized ? '就绪' : '未就绪'}</span>
+              </span>
+            )}
           </div>
           <button className="flex items-center space-x-1 px-3 py-1.5 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors">
             <Save className="w-4 h-4" />
@@ -185,6 +272,15 @@ const TextFilter = () => {
         onAddCustomRule={() => setIsCustomRuleFormOpen(true)}
         onEditCustomRule={(rule) => setEditingRule(rule)}
         onDeleteCustomRule={handleDeleteCustomRule}
+        // LLM相关props
+        isLLMEnabled={isLLMEnabled}
+        onToggleLLM={handleToggleLLM}
+        selectedModel={selectedModel}
+        onModelChange={handleModelChange}
+        llmStatus={llmStatus}
+        onLLMStatusChange={handleLLMStatusChange}
+        processingMode={processingMode}
+        onProcessingModeChange={handleProcessingModeChange}
       />
 
       {/* 自定义规则表单 */}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Plus, Edit2, Trash2 } from 'lucide-react';
+import LLMConfig from './LLMConfig';
 
 const SettingsPanel = ({ 
   isOpen, 
@@ -10,7 +11,16 @@ const SettingsPanel = ({
   onToggleRule,
   onAddCustomRule,
   onEditCustomRule,
-  onDeleteCustomRule
+  onDeleteCustomRule,
+  // LLM相关props
+  isLLMEnabled,
+  onToggleLLM,
+  selectedModel,
+  onModelChange,
+  llmStatus,
+  onLLMStatusChange,
+  processingMode,
+  onProcessingModeChange
 }) => {
   const [selectedTab, setSelectedTab] = useState('system');
 
@@ -172,12 +182,35 @@ const SettingsPanel = ({
             >
               自定义规则
             </button>
+            <button
+              onClick={() => setSelectedTab('ai')}
+              className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                selectedTab === 'ai'
+                  ? 'text-blue-600 border-blue-600'
+                  : 'text-gray-500 border-transparent hover:text-gray-700'
+              }`}
+            >
+              AI过滤
+            </button>
           </div>
         </div>
 
         {/* 内容区域 */}
         <div className="flex-1 overflow-auto p-6">
-          {selectedTab === 'system' ? renderSystemRules() : renderCustomRules()}
+          {selectedTab === 'system' && renderSystemRules()}
+          {selectedTab === 'custom' && renderCustomRules()}
+          {selectedTab === 'ai' && (
+            <LLMConfig
+              isLLMEnabled={isLLMEnabled}
+              onToggleLLM={onToggleLLM}
+              selectedModel={selectedModel}
+              onModelChange={onModelChange}
+              llmStatus={llmStatus}
+              onLLMStatusChange={onLLMStatusChange}
+              processingMode={processingMode}
+              onProcessingModeChange={onProcessingModeChange}
+            />
+          )}
         </div>
 
         {/* 底部按钮 */}
