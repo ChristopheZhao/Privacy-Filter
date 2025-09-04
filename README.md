@@ -7,6 +7,7 @@ A desktop application for filtering sensitive information from text while preser
 ## Key Features (功能特点)
 
 - **LLM Prompt Safety**: Ideal for sanitizing prompts before sending to LLMs (ChatGPT, Claude, etc.)
+- **AI-Enhanced Filtering**: Local quantization language models for intelligent privacy detection
 - **Context Preservation**: Maintains text structure while replacing sensitive data
 - **Built-in Rules** for common sensitive data:
   - Personal IDs
@@ -19,11 +20,13 @@ A desktop application for filtering sensitive information from text while preser
   - IP addresses
   - Contract numbers
 - **Custom Rules**: Create your own patterns using regex
-- **Local Processing**: All data processing happens locally
+- **Local Processing**: All data processing happens locally (including AI models)
+- **Multiple Processing Modes**: Rule-based, AI-only, or hybrid filtering
 - **User-friendly Interface**: Simple drag-and-drop operation
 - **Rule Import/Export**: Share and backup your custom rules
 
 - **LLM 提示词安全**: 在发送给大语言模型(ChatGPT, Claude等)之前，清理提示词中的敏感信息
+- **AI智能增强**: 使用本地量化语言模型进行智能化隐私信息检测
 - **保留上下文**: 在替换敏感数据的同时保持文本结构完整
 - **内置常见敏感信息过滤规则**:
   - 身份证号码
@@ -93,10 +96,43 @@ privacy-filter/
 ├── src/
 │   ├── components/    # React 组件
 │   ├── utils/        # 工具函数和规则配置
+│   │   └── llmService.js  # AI模型服务
 │   └── ...
 ├── package.json
 └── vite.config.js
 ```
+
+## AI 智能过滤 (AI-Enhanced Filtering)
+
+本项目支持使用本地量化语言模型进行智能隐私信息检测，作为传统规则过滤的补充或替代。
+
+### 特性
+
+- **完全本地处理**: 所有AI处理都在本地进行，数据不会上传到任何服务器
+- **多种模型选择**: 
+  - BERT Tiny (~17MB) - 超快处理，基础准确度
+  - DistilBERT Base (~250MB) - 平衡速度与准确度（推荐）
+  - RoBERTa Base (~500MB) - 最佳准确度，较慢处理
+- **灵活的处理模式**:
+  - 仅AI过滤: 完全使用AI进行隐私检测
+  - 混合模式: 结合规则过滤和AI检测（推荐）
+  - AI优先，规则兜底: AI失败时自动回退到规则过滤
+
+### 使用方法
+
+1. 打开设置面板，切换到"AI过滤"标签页
+2. 勾选"启用AI过滤"
+3. 选择适合的模型（推荐DistilBERT Base）
+4. 点击"初始化模型"并等待下载完成
+5. 选择处理模式
+6. 开始使用AI增强的隐私过滤
+
+### 技术细节
+
+- 使用 `@huggingface/transformers` 库进行模型加载和推理
+- 支持CPU推理，无需GPU
+- 模型会缓存在本地，后续启动更快
+- 自动错误处理和降级策略
 
 ### 安装依赖
 ```bash
