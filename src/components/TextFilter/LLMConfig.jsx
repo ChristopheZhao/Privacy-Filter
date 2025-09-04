@@ -1,5 +1,5 @@
 // src/components/TextFilter/LLMConfig.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Download, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { llmPrivacyFilter, availableModels } from '../../utils/llmService';
 
@@ -15,12 +15,6 @@ const LLMConfig = ({
 }) => {
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    // Update status when LLM status changes
-    const status = llmPrivacyFilter.getStatus();
-    onLLMStatusChange(status);
-  }, [onLLMStatusChange]);
 
   const handleInitializeModel = async () => {
     if (!selectedModel) return;
