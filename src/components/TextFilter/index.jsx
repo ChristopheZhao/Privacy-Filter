@@ -18,11 +18,18 @@ const TextFilter = () => {
   const [customRules, setCustomRules] = useState([]);
   const [activeRules, setActiveRules] = useState(defaultActiveRules);
 
+  // 模型和过滤模式状态
+  const [filteringMode, setFilteringMode] = useState('regex'); // 'regex' 或 'llm'
+  const [selectedModel, setSelectedModel] = useState('qwen2.5-0.5b');
+
   // 文本过滤处理
   const handleTextChange = useCallback((text) => {
     setInputText(text);
-    let processed = text;
     
+    if (filteringMode === 'regex') {
+      // 使用正则表达式模式
+      let processed = text;
+      
       // 首先处理系统规则
       ruleOrder.forEach(ruleKey => {
         if (activeRules[ruleKey] && systemRules[ruleKey]) {
@@ -36,9 +43,48 @@ const TextFilter = () => {
           processed = processed.replace(rule.pattern, rule.replacement);
         }
       });
-    
-    setFilteredText(processed);
-  }, [systemRules, customRules, activeRules]);
+      
+      setFilteredText(processed);
+    } else if (filteringMode === 'llm') {
+      // 使用LLM模式 - 目前是模拟实现
+      // 在实际实现中，这里会调用选定的LLM模型进行处理
+      const processWithLLM = async (inputText) => {
+        // 模拟LLM处理延迟
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // 模拟LLM更智能的处理结果
+        let processed = inputText;
+        
+        // 模拟上下文感知的替换 - 实际会由LLM模型处理
+        processed = processed.replace(/我的名字是[\u4e00-\u9fa5]{2,4}/g, '我的名字是[NAME]');
+        processed = processed.replace(/我住在[\u4e00-\u9fa5\d]{5,}/g, '我住在[ADDRESS]');
+        processed = processed.replace(/我老板[\u4e00-\u9fa5]{2,4}/g, '我老板[NAME]');
+        processed = processed.replace(/[1-9]\d{10}/g, '[PHONE_NUMBER]');
+        processed = processed.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL]');
+        
+        return processed;
+      };
+      
+      // 设置处理中状态
+      setFilteredText('正在使用 ' + getModelDisplayName(selectedModel) + ' 处理中...');
+      
+      processWithLLM(text).then(result => {
+        setFilteredText(result);
+      }).catch(error => {
+        setFilteredText('处理失败: ' + error.message);
+      });
+    }
+  }, [systemRules, customRules, activeRules, filteringMode, selectedModel]);
+
+  // 获取模型显示名称
+  const getModelDisplayName = (modelId) => {
+    const modelNames = {
+      'qwen2.5-0.5b': 'Qwen2.5-0.5B-Instruct',
+      'phi-3.5-mini': 'Phi-3.5-mini-instruct', 
+      'gemma-2b': 'Gemma-2B-it'
+    };
+    return modelNames[modelId] || modelId;
+  };
 
   // 规则管理处理函数
   const handleToggleRule = (ruleKey, isEnabled) => {
@@ -114,6 +160,24 @@ const TextFilter = () => {
     }
   };
 
+  // 处理过滤模式变化
+  const handleFilteringModeChange = (mode) => {
+    setFilteringMode(mode);
+    // 重新处理当前文本
+    if (inputText) {
+      handleTextChange(inputText);
+    }
+  };
+
+  // 处理模型选择变化
+  const handleModelChange = (modelId) => {
+    setSelectedModel(modelId);
+    // 如果当前是LLM模式，重新处理文本
+    if (filteringMode === 'llm' && inputText) {
+      handleTextChange(inputText);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <header className="bg-white shadow-sm px-4 py-3">
@@ -164,8 +228,17 @@ const TextFilter = () => {
 
       <footer className="bg-white shadow-sm px-4 py-3">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="text-sm text-gray-600">
-            已启用 {Object.values(activeRules).filter(Boolean).length} 个过滤规则
+          <div className="text-sm text-gray-600 flex items-center space-x-4">
+            <span>
+              已启用 {Object.values(activeRules).filter(Boolean).length} 个过滤规则
+            </span>
+            <span className={`px-2 py-1 rounded-full text-xs ${
+              filteringMode === 'regex' 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-blue-100 text-blue-800'
+            }`}>
+              {filteringMode === 'regex' ? '正则模式' : `LLM模式 (${getModelDisplayName(selectedModel)})`}
+            </span>
           </div>
           <button className="flex items-center space-x-1 px-3 py-1.5 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors">
             <Save className="w-4 h-4" />
@@ -185,6 +258,10 @@ const TextFilter = () => {
         onAddCustomRule={() => setIsCustomRuleFormOpen(true)}
         onEditCustomRule={(rule) => setEditingRule(rule)}
         onDeleteCustomRule={handleDeleteCustomRule}
+        filteringMode={filteringMode}
+        onFilteringModeChange={handleFilteringModeChange}
+        selectedModel={selectedModel}
+        onModelChange={handleModelChange}
       />
 
       {/* 自定义规则表单 */}
