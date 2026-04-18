@@ -1,30 +1,23 @@
 import React, { useState } from 'react';
-import { X, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Plus, Trash2, X } from 'lucide-react';
 
-const SettingsPanel = ({ 
-  isOpen, 
-  onClose, 
+const SettingsPanel = ({
+  isOpen,
+  onClose,
   systemRules,
   customRules,
   activeRules,
   onToggleRule,
   onAddCustomRule,
   onEditCustomRule,
-  onDeleteCustomRule
+  onDeleteCustomRule,
 }) => {
   const [selectedTab, setSelectedTab] = useState('system');
 
   if (!isOpen) return null;
 
-  // 获取所有自定义规则的类别
-  const getCustomCategories = () => {
-    const categories = new Set(customRules.map(rule => rule.category));
-    return Array.from(categories);
-  };
-
-  // 根据类别对规则进行分组
-  const groupRulesByCategory = () => {
-    return customRules.reduce((acc, rule) => {
+  const groupRulesByCategory = () =>
+    customRules.reduce((acc, rule) => {
       const category = rule.category || '未分类';
       if (!acc[category]) {
         acc[category] = [];
@@ -32,7 +25,6 @@ const SettingsPanel = ({
       acc[category].push(rule);
       return acc;
     }, {});
-  };
 
   const renderSystemRules = () => (
     <div className="space-y-4">
@@ -43,7 +35,7 @@ const SettingsPanel = ({
               type="checkbox"
               id={key}
               checked={activeRules[key] || false}
-              onChange={(e) => onToggleRule(key, e.target.checked)}
+              onChange={(event) => onToggleRule(key, event.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
           </div>
@@ -52,7 +44,7 @@ const SettingsPanel = ({
               {rule.description}
             </label>
             <p className="text-sm text-gray-500 mt-1">
-              替换为: {typeof rule.replacement === 'string' ? rule.replacement : '自定义替换规则'}
+              替换为 {typeof rule.replacement === 'string' ? rule.replacement : '按规则动态替换'}
             </p>
           </div>
         </div>
@@ -91,7 +83,7 @@ const SettingsPanel = ({
                       type="checkbox"
                       id={rule.name}
                       checked={activeRules[rule.name] || false}
-                      onChange={(e) => onToggleRule(rule.name, e.target.checked)}
+                      onChange={(event) => onToggleRule(rule.name, event.target.checked)}
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </div>
@@ -104,9 +96,7 @@ const SettingsPanel = ({
                         {rule.description && (
                           <p className="text-sm text-gray-500 mt-1">{rule.description}</p>
                         )}
-                        <p className="text-sm text-gray-500 mt-1">
-                          替换为: {rule.replacement}
-                        </p>
+                        <p className="text-sm text-gray-500 mt-1">替换为 {rule.replacement}</p>
                       </div>
                       <div className="flex space-x-2">
                         <button
@@ -138,18 +128,17 @@ const SettingsPanel = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div className="bg-white rounded-lg w-full max-w-2xl max-h-[80vh] flex flex-col">
-        {/* 头部 */}
         <div className="flex justify-between items-center px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-gray-900">规则设置</h2>
-          <button 
+          <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            title="关闭"
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
-        {/* 标签页切换 */}
         <div className="px-6 pt-4 border-b">
           <div className="flex space-x-4">
             <button
@@ -175,12 +164,10 @@ const SettingsPanel = ({
           </div>
         </div>
 
-        {/* 内容区域 */}
         <div className="flex-1 overflow-auto p-6">
           {selectedTab === 'system' ? renderSystemRules() : renderCustomRules()}
         </div>
 
-        {/* 底部按钮 */}
         <div className="border-t px-6 py-4">
           <button
             onClick={onClose}
