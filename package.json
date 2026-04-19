@@ -12,6 +12,7 @@
     "prompt-safety"
   ],
   "homepage": "https://github.com/ChristopheZhao/Privacy-Filter",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/ChristopheZhao/Privacy-Filter/issues"
   },

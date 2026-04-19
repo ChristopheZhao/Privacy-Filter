@@ -149,3 +149,7 @@ Please do not report security issues through public issues when exploitation det
 ## Changelog
 
 Project history is tracked in [CHANGELOG.md](CHANGELOG.md).
+
+## License
+
+This project is released under the [MIT License](LICENSE).
