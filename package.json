@@ -1,6 +1,27 @@
 {
   "name": "privacy-filter",
   "version": "1.0.0",
+  "description": "A local-first desktop app for filtering sensitive information from text with regex preview and local LLM deep filtering.",
+  "keywords": [
+    "privacy",
+    "tauri",
+    "react",
+    "llm",
+    "ollama",
+    "redaction",
+    "prompt-safety"
+  ],
+  "homepage": "https://github.com/ChristopheZhao/Privacy-Filter",
+  "bugs": {
+    "url": "https://github.com/ChristopheZhao/Privacy-Filter/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChristopheZhao/Privacy-Filter.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
