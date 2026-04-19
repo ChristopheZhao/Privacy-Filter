@@ -154,6 +154,7 @@ const TextFilter = () => {
   const [deepFilterError, setDeepFilterError] = useState('');
   const [deepFilterResult, setDeepFilterResult] = useState(null);
   const [selectedFindingKeys, setSelectedFindingKeys] = useState({});
+  const [compactReviewMode, setCompactReviewMode] = useState(true);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -645,6 +646,12 @@ const TextFilter = () => {
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <button
+                          onClick={() => setCompactReviewMode((value) => !value)}
+                          className="rounded-xl bg-white/85 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-white"
+                        >
+                          {compactReviewMode ? '展开详情' : '紧凑模式'}
+                        </button>
+                        <button
                           onClick={handleSelectAllFindings}
                           className="rounded-xl bg-white/85 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-white"
                         >
@@ -671,6 +678,9 @@ const TextFilter = () => {
                             10,
                             Math.min(100, Number(finding.confidence || 0) * 100)
                           );
+                          const itemClass = selected
+                            ? 'border-emerald-200 bg-white shadow-[0_20px_40px_-28px_rgba(5,150,105,0.4)] ring-1 ring-emerald-100'
+                            : 'border-white/70 bg-white/75 hover:border-slate-200 hover:bg-white';
                           return (
                             <div
                               key={getFindingKey(finding)}
@@ -683,11 +693,9 @@ const TextFilter = () => {
                                   handleToggleFinding(finding);
                                 }
                               }}
-                              className={`w-full text-left rounded-[24px] border p-4 transition-all ${
-                                selected
-                                  ? 'border-emerald-200 bg-white shadow-[0_20px_40px_-28px_rgba(5,150,105,0.4)] ring-1 ring-emerald-100'
-                                  : 'border-white/70 bg-white/75 hover:border-slate-200 hover:bg-white'
-                              }`}
+                              className={`w-full text-left rounded-[24px] border transition-all ${
+                                compactReviewMode ? 'p-3.5' : 'p-4'
+                              } ${itemClass}`}
                             >
                               <div className="flex items-start gap-3">
                                 <input
@@ -715,25 +723,22 @@ const TextFilter = () => {
                                       置信度 {formatConfidence(finding.confidence)}
                                     </span>
                                   </div>
-                                  <div className="mt-3">
-                                    <div className="flex items-center justify-between text-[11px] font-medium text-slate-500">
-                                      <span>置信度</span>
-                                      <span>{formatConfidence(finding.confidence)}</span>
-                                    </div>
-                                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-emerald-100">
-                                      <div
-                                        className="h-full rounded-full bg-emerald-500"
-                                        style={{ width: `${confidenceWidth}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="mt-3 grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+                                  <div
+                                    className={`mt-3 grid grid-cols-1 gap-3 text-sm ${
+                                      compactReviewMode ? 'xl:grid-cols-[1fr,auto,1fr]' : 'md:grid-cols-2'
+                                    }`}
+                                  >
                                     <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
                                       <div className="mb-1 text-xs text-slate-500">原文片段</div>
                                       <div className="break-all font-medium text-slate-800">
                                         {finding.text}
                                       </div>
                                     </div>
+                                    {compactReviewMode && (
+                                      <div className="hidden xl:flex items-center justify-center text-slate-300">
+                                        →
+                                      </div>
+                                    )}
                                     <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3">
                                       <div className="mb-1 text-xs text-emerald-700/80">替换结果</div>
                                       <div className="break-all font-medium text-emerald-700">
@@ -741,7 +746,21 @@ const TextFilter = () => {
                                       </div>
                                     </div>
                                   </div>
-                                  {finding.reason && (
+                                  {!compactReviewMode && (
+                                    <div className="mt-3">
+                                      <div className="flex items-center justify-between text-[11px] font-medium text-slate-500">
+                                        <span>置信度</span>
+                                        <span>{formatConfidence(finding.confidence)}</span>
+                                      </div>
+                                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-emerald-100">
+                                        <div
+                                          className="h-full rounded-full bg-emerald-500"
+                                          style={{ width: `${confidenceWidth}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                  {finding.reason && !compactReviewMode && (
                                     <p className="mt-3 text-xs text-slate-500">
                                       原因：{finding.reason}
                                     </p>

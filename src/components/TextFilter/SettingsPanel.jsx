@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Edit2, Plus, Trash2, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Edit2, Plus, Trash2, X } from 'lucide-react';
 
 const SettingsPanel = ({
   isOpen,
@@ -15,6 +15,7 @@ const SettingsPanel = ({
   onChangeLlmConfig,
 }) => {
   const [selectedTab, setSelectedTab] = useState('system');
+  const [showAdvancedLlm, setShowAdvancedLlm] = useState(false);
 
   if (!isOpen) return null;
 
@@ -140,6 +141,17 @@ const SettingsPanel = ({
         <p className="mt-1 text-sm text-emerald-800">
           深度过滤会通过本地模型服务识别上下文中的隐私信息，不会把文本上传到云端。
         </p>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+          <span className="rounded-full border border-emerald-200 bg-white/90 px-3 py-1 font-medium text-emerald-700">
+            默认推荐: qwen3.5:4b
+          </span>
+          <span className="rounded-full border border-emerald-200 bg-white/90 px-3 py-1 font-medium text-emerald-700">
+            Provider: ollama
+          </span>
+          <span className="rounded-full border border-emerald-200 bg-white/90 px-3 py-1 font-medium text-emerald-700">
+            阈值: 0
+          </span>
+        </div>
       </div>
 
       <div className="flex items-start justify-between gap-4 rounded-[24px] border border-slate-200 bg-slate-50/90 p-4">
@@ -162,7 +174,7 @@ const SettingsPanel = ({
         </label>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
           <input
@@ -194,67 +206,87 @@ const SettingsPanel = ({
             placeholder="http://127.0.0.1:11434"
           />
         </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">超时（毫秒）</label>
-          <input
-            type="number"
-            min="1000"
-            step="1000"
-            value={llmConfig.timeout_ms}
-            onChange={(event) =>
-              onChangeLlmConfig({ timeout_ms: Number(event.target.value) || 1000 })
-            }
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 shadow-sm focus:ring-1 focus:ring-sky-500"
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            Confidence threshold: keep `0` for the benchmark-backed default behavior.
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">置信度阈值</label>
-          <input
-            type="number"
-            min="0"
-            max="1"
-            step="0.05"
-            value={llmConfig.confidence_threshold}
-            onChange={(event) =>
-              onChangeLlmConfig({
-                confidence_threshold: Math.min(1, Math.max(0, Number(event.target.value) || 0)),
-              })
-            }
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 shadow-sm focus:ring-1 focus:ring-sky-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">分块大小</label>
-          <input
-            type="number"
-            min="256"
-            step="128"
-            value={llmConfig.max_chunk_chars}
-            onChange={(event) =>
-              onChangeLlmConfig({ max_chunk_chars: Number(event.target.value) || 256 })
-            }
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 shadow-sm focus:ring-1 focus:ring-sky-500"
-          />
-        </div>
-
-        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-3">
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-4">
+        <button
+          type="button"
+          onClick={() => setShowAdvancedLlm((value) => !value)}
+          className="flex w-full items-start justify-between gap-4 text-left"
+        >
           <div>
-            <p className="text-sm font-medium text-gray-800">启用思考模式</p>
-            <p className="text-xs text-gray-500 mt-1">通常会更慢，默认关闭更适合结构化抽取。</p>
+            <h4 className="text-sm font-semibold text-slate-800">高级参数</h4>
+            <p className="mt-1 text-xs text-slate-500">
+              一般保持默认即可。只有在调试 provider、速度或召回策略时才需要调整。
+            </p>
           </div>
-          <input
-            type="checkbox"
-            checked={llmConfig.think}
-            onChange={(event) => onChangeLlmConfig({ think: event.target.checked })}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-        </div>
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm">
+            {showAdvancedLlm ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </span>
+        </button>
+
+        {showAdvancedLlm && (
+          <div className="mt-4 grid grid-cols-1 gap-4 border-t border-slate-200 pt-4 md:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">超时（毫秒）</label>
+              <input
+                type="number"
+                min="1000"
+                step="1000"
+                value={llmConfig.timeout_ms}
+                onChange={(event) =>
+                  onChangeLlmConfig({ timeout_ms: Number(event.target.value) || 1000 })
+                }
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 shadow-sm focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">置信度阈值</label>
+              <input
+                type="number"
+                min="0"
+                max="1"
+                step="0.05"
+                value={llmConfig.confidence_threshold}
+                onChange={(event) =>
+                  onChangeLlmConfig({
+                    confidence_threshold: Math.min(1, Math.max(0, Number(event.target.value) || 0)),
+                  })
+                }
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 shadow-sm focus:ring-1 focus:ring-sky-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">当前推荐默认保持为 0。</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">分块大小</label>
+              <input
+                type="number"
+                min="256"
+                step="128"
+                value={llmConfig.max_chunk_chars}
+                onChange={(event) =>
+                  onChangeLlmConfig({ max_chunk_chars: Number(event.target.value) || 256 })
+                }
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 shadow-sm focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-gray-800">启用思考模式</p>
+                <p className="text-xs text-gray-500 mt-1">通常会更慢，默认关闭更适合结构化抽取。</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={llmConfig.think}
+                onChange={(event) => onChangeLlmConfig({ think: event.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
