@@ -7,6 +7,10 @@ yarn-error.log
 # Production
 /dist
 /release
+.artifacts/
+.tmp-vite-*.log
+benchmarks/local-llm-filter/results/*
+!benchmarks/local-llm-filter/results/.gitkeep
 
 # IDE
 .idea/

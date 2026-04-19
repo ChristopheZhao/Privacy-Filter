@@ -1,0 +1,90 @@
+{
+  "runtime": {
+    "provider": "ollama",
+    "base_url": "http://127.0.0.1:11434",
+    "timeout_ms": 60000,
+    "think": false,
+    "temperature": 0,
+    "chunk_strategy": {
+      "max_chars": 1800,
+      "overlap_chars": 120
+    }
+  },
+  "variants": [
+    {
+      "id": "regex",
+      "kind": "baseline",
+      "model": null,
+      "use_regex_prefilter": true,
+      "use_llm": false
+    },
+    {
+      "id": "regex+qwen3.5:2b",
+      "kind": "llm",
+      "model": "qwen3.5:2b",
+      "use_regex_prefilter": true,
+      "use_llm": true
+    },
+    {
+      "id": "regex+qwen3.5:4b",
+      "kind": "llm",
+      "model": "qwen3.5:4b",
+      "use_regex_prefilter": true,
+      "use_llm": true
+    },
+    {
+      "id": "regex+gemma4:e4b",
+      "kind": "llm",
+      "model": "gemma4:e4b",
+      "use_regex_prefilter": true,
+      "use_llm": true
+    },
+    {
+      "id": "pure+qwen3.5:4b",
+      "kind": "llm",
+      "model": "qwen3.5:4b",
+      "use_regex_prefilter": false,
+      "use_llm": true
+    },
+    {
+      "id": "pure+qwen3.5:4b+priors",
+      "kind": "llm",
+      "model": "qwen3.5:4b",
+      "use_regex_prefilter": false,
+      "use_llm": true,
+      "prompt_file": "prompts/extraction-prompt-priors.md"
+    },
+    {
+      "id": "pure+qwen3.5:4b+priors-v2",
+      "kind": "llm",
+      "model": "qwen3.5:4b",
+      "use_regex_prefilter": false,
+      "use_llm": true,
+      "prompt_file": "prompts/extraction-prompt-priors-v2.md"
+    },
+    {
+      "id": "pure+qwen3.5:2b+priors-v2",
+      "kind": "llm",
+      "model": "qwen3.5:2b",
+      "use_regex_prefilter": false,
+      "use_llm": true,
+      "prompt_file": "prompts/extraction-prompt-priors-v2.md"
+    },
+    {
+      "id": "pure+qwen3.5:4b+priors-v3",
+      "kind": "llm",
+      "model": "qwen3.5:4b",
+      "use_regex_prefilter": false,
+      "use_llm": true,
+      "prompt_file": "prompts/extraction-prompt-priors-v3.md"
+    },
+    {
+      "id": "pure+qwen3.5:4b+priors-v4",
+      "kind": "llm",
+      "model": "qwen3.5:4b",
+      "use_regex_prefilter": false,
+      "use_llm": true,
+      "prompt_file": "prompts/extraction-prompt-priors-v4.md"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://privacy-filter.local/benchmark-sample.schema.json",
+  "title": "Local LLM Filter Benchmark Sample",
+  "type": "object",
+  "required": ["id", "language", "domain", "category", "text", "expected_spans"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "language": {
+      "type": "string",
+      "minLength": 2
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "type": "string",
+      "enum": ["deterministic", "contextual", "code-config-log", "negative", "mixed-noisy"]
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_spans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["label", "start", "end", "text", "replacement", "required"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "text": {
+            "type": "string"
+          },
+          "replacement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "notes": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

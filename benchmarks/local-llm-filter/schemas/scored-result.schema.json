@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://privacy-filter.local/scored-result.schema.json",
+  "title": "Local LLM Filter Scored Result",
+  "type": "object",
+  "required": [
+    "sample_id",
+    "variant",
+    "resolved_spans",
+    "unresolved_findings",
+    "parse_ok",
+    "elapsed_ms"
+  ],
+  "properties": {
+    "sample_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "variant": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resolved_spans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "label",
+          "start",
+          "end",
+          "text",
+          "replacement",
+          "confidence",
+          "source"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "replacement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "source": {
+            "type": "string",
+            "enum": ["regex", "llm", "merged"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "unresolved_findings": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "parse_ok": {
+      "type": "boolean"
+    },
+    "elapsed_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "peak_memory_mb": {
+      "type": "number",
+      "minimum": 0
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
