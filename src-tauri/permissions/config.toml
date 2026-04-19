@@ -7,3 +7,13 @@ commands.allow = ["load_config"]
 identifier = "allow-save-config"
 description = "Enables the save_config command."
 commands.allow = ["save_config"]
+
+[[permission]]
+identifier = "allow-llm-healthcheck"
+description = "Enables the llm_healthcheck command."
+commands.allow = ["llm_healthcheck"]
+
+[[permission]]
+identifier = "allow-analyze-text"
+description = "Enables the analyze_text command."
+commands.allow = ["analyze_text"]

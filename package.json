@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test:deep-filter": "node --test src/components/TextFilter/deepFilterUtils.test.js",
     "preview": "vite preview",
+    "bench:local-llm-filter": "node benchmarks/local-llm-filter/run-benchmark.js",
     "tauri": "tauri",
     "dev:tauri": "tauri dev",
     "build:tauri": "tauri build"

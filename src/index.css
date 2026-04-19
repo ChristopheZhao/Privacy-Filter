@@ -3,8 +3,17 @@
 @tailwind utilities;
 
 :root {
-  color: #111827;
-  background-color: #f3f4f6;
+  --pf-ink: #142132;
+  --pf-muted: #607081;
+  --pf-card: rgba(255, 255, 255, 0.82);
+  --pf-border: rgba(148, 163, 184, 0.22);
+  --pf-accent: #0f766e;
+  --pf-accent-soft: rgba(204, 251, 241, 0.65);
+  color: var(--pf-ink);
+  background:
+    radial-gradient(circle at top left, rgba(167, 243, 208, 0.42), transparent 34%),
+    radial-gradient(circle at top right, rgba(191, 219, 254, 0.45), transparent 28%),
+    linear-gradient(180deg, #f7fbfa 0%, #edf4f3 100%);
   font-family: "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", system-ui,
     -apple-system, BlinkMacSystemFont, sans-serif;
@@ -17,6 +26,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: transparent;
+  color: var(--pf-ink);
 }
 
 button,
@@ -24,6 +35,10 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+::selection {
+  background: rgba(15, 118, 110, 0.18);
 }
 
 #root {
