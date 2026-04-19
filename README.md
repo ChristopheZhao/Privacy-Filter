@@ -28,10 +28,11 @@ The product should support multiple local provider choices over time.
 
 Current benchmark-backed recommendation on the `60`-sample starter corpus:
 
-- Default deep-filter path: `pure + qwen3.5:4b + priors-v2`
+- Default deep-filter path: `pure + qwen3.5:4b + priors-v4 + post-processing`
 - Current model recommendation: `qwen3.5:4b`
 - Lower-cost fallback candidate: `qwen3.5:2b`, with clearly lower recall than `4b`
 - Regex remains in the product for quick preview and fallback, but it is no longer the preferred deep-filter strategy direction.
+- The latest pure-LLM reference run reached `96.48%` F1, `93.84%` recall, `99.28%` precision, and `0.00%` negative-sample false-positive rate on the current `60`-sample pause-point corpus.
 
 Current caveat:
 

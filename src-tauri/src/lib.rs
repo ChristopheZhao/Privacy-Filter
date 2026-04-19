@@ -7,10 +7,32 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, Runtime};
 
 const EXTRACTION_PROMPT_MARKDOWN: &str =
-    include_str!("../../benchmarks/local-llm-filter/prompts/extraction-prompt-priors-v2.md");
+    include_str!("../../benchmarks/local-llm-filter/prompts/extraction-prompt-priors-v4.md");
 const FALLBACK_SYSTEM_PROMPT: &str = "You are a local privacy extraction model. Extract only spans that should be redacted from the user input. Return JSON only. Never rewrite the full text. Prefer exact anchor_text copied from the original input. Use the most privacy-specific label available.";
 const FALLBACK_USER_TEMPLATE: &str =
     "Analyze the following text for sensitive or private content and return JSON only.\n\nText:\n```text\n{{INPUT_TEXT}}\n```";
+const ALLOWED_LABELS: &[&str] = &[
+    "NAME",
+    "ADDRESS",
+    "PHONE_NUMBER",
+    "EMAIL",
+    "ID_CARD",
+    "PASSPORT_NUMBER",
+    "BANK_CARD",
+    "WECHAT_ID",
+    "QQ_NUMBER",
+    "API_KEY",
+    "PUBLIC_KEY",
+    "SENSITIVE_VALUE",
+    "DATABASE_URL",
+    "DATABASE_CONFIG",
+    "IP_ADDRESS",
+    "PORT",
+    "API_ENDPOINT",
+    "CONFIG_VALUE",
+    "ORG_NAME",
+    "ACCOUNT_IDENTIFIER",
+];
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
@@ -475,6 +497,37 @@ fn resolve_model_findings(
     (resolved, unresolved)
 }
 
+fn finding_is_nested_within(parent: &ResolvedFinding, child: &ResolvedFinding) -> bool {
+    parent.byte_start <= child.byte_start && child.byte_end <= parent.byte_end
+}
+
+fn post_process_resolved_findings(findings: Vec<ResolvedFinding>) -> Vec<ResolvedFinding> {
+    let database_urls = findings
+        .iter()
+        .filter(|finding| finding.label == "DATABASE_URL")
+        .cloned()
+        .collect::<Vec<_>>();
+
+    findings
+        .into_iter()
+        .filter(|finding| ALLOWED_LABELS.contains(&finding.label.as_str()))
+        .filter(|finding| {
+            if !matches!(
+                finding.label.as_str(),
+                "IP_ADDRESS" | "PORT" | "SENSITIVE_VALUE"
+            ) {
+                return true;
+            }
+
+            !database_urls.iter().any(|database_url| {
+                finding.label != "DATABASE_URL"
+                    && database_url.text != finding.text
+                    && finding_is_nested_within(database_url, finding)
+            })
+        })
+        .collect()
+}
+
 fn select_applied_findings(findings: &[ResolvedFinding]) -> Vec<ResolvedFinding> {
     let mut applied = Vec::new();
 
@@ -642,8 +695,9 @@ async fn analyze_text<R: Runtime>(
 
     let config = merged_llm_config(load_config_from_disk(&app_handle)?.llm, runtime);
     let (raw_findings, elapsed_ms) = provider_analyze_text(&config, &input).await?;
-    let (findings, unresolved_findings) =
+    let (resolved_findings, unresolved_findings) =
         resolve_model_findings(&input, &raw_findings, config.confidence_threshold);
+    let findings = post_process_resolved_findings(resolved_findings);
     let applied_findings = select_applied_findings(&findings);
     let redacted_text = apply_redactions(&input, &applied_findings);
 
@@ -678,7 +732,8 @@ pub fn run() {
 mod tests {
     use super::{
         apply_redactions, extraction_prompt_sections, extraction_user_prompt, parse_json_content,
-        resolve_model_findings, supported_provider, LlmConfig, ModelFinding,
+        post_process_resolved_findings, resolve_model_findings, supported_provider, LlmConfig,
+        ModelFinding, ResolvedFinding,
     };
 
     #[test]
@@ -821,5 +876,60 @@ mod tests {
             redacted,
             "群里结论是由京东云企业服务部的[NAME]继续跟，先把回调切到[API_ENDPOINT]。"
         );
+    }
+
+    #[test]
+    fn post_processing_drops_nested_database_url_components_and_unknown_labels() {
+        let findings = vec![
+            ResolvedFinding {
+                label: "DATABASE_URL".to_string(),
+                start: 0,
+                end: 38,
+                text: "redis://:cachepass@10.0.5.12:6379/0".to_string(),
+                replacement: "[DATABASE_URL]".to_string(),
+                confidence: 0.0,
+                reason: String::new(),
+                byte_start: 0,
+                byte_end: 38,
+            },
+            ResolvedFinding {
+                label: "IP_ADDRESS".to_string(),
+                start: 19,
+                end: 28,
+                text: "10.0.5.12".to_string(),
+                replacement: "[IP_ADDRESS]".to_string(),
+                confidence: 0.0,
+                reason: String::new(),
+                byte_start: 19,
+                byte_end: 28,
+            },
+            ResolvedFinding {
+                label: "PORT".to_string(),
+                start: 29,
+                end: 33,
+                text: "6379".to_string(),
+                replacement: "[PORT]".to_string(),
+                confidence: 0.0,
+                reason: String::new(),
+                byte_start: 29,
+                byte_end: 33,
+            },
+            ResolvedFinding {
+                label: "ISSUE_ID".to_string(),
+                start: 40,
+                end: 48,
+                text: "APP-1024".to_string(),
+                replacement: "[ISSUE_ID]".to_string(),
+                confidence: 0.0,
+                reason: String::new(),
+                byte_start: 40,
+                byte_end: 48,
+            },
+        ];
+
+        let processed = post_process_resolved_findings(findings);
+
+        assert_eq!(processed.len(), 1);
+        assert_eq!(processed[0].label, "DATABASE_URL");
     }
 }

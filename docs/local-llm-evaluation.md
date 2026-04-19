@@ -19,6 +19,8 @@ Compared variants:
 - `pure + qwen3.5:4b`
 - `pure + qwen3.5:4b + priors`
 - `pure + qwen3.5:4b + priors-v2`
+- `pure + qwen3.5:4b + priors-v3`
+- `pure + qwen3.5:4b + priors-v4`
 
 Benchmark assets live under:
 
@@ -110,6 +112,9 @@ Reference:
 
 - `benchmarks/local-llm-filter/results/pure-llm-priors-v2-20260419.summary.md`
 - `benchmarks/local-llm-filter/results/pure-qwen-fallback-priors-v2-20260419-rerun.summary.md`
+- `benchmarks/local-llm-filter/results/pure-qwen-priors-v2-v3-20260419.summary.md`
+- `benchmarks/local-llm-filter/results/pure-qwen-priors-v3-v4-20260419.summary.md`
+- `benchmarks/local-llm-filter/results/pure-qwen-priors-v2-v4-postprocess-20260419.summary.md`
 
 Headline metrics:
 
@@ -119,30 +124,34 @@ Headline metrics:
 | `pure + qwen3.5:4b + priors` | `60.84%` | `80.56%` | `69.32%` | `52.70%` | `69.57%` | `100.00%` | `0.00%` | `1060.22 ms` |
 | `pure + qwen3.5:4b + priors-v2` | `78.32%` | `91.06%` | `84.21%` | `75.68%` | `81.16%` | `100.00%` | `0.00%` | `1121.97 ms` |
 | `pure + qwen3.5:2b + priors-v2` | `57.34%` | `78.85%` | `66.40%` | `56.76%` | `57.97%` | `100.00%` | `0.00%` | `715.90 ms` |
+| `pure + qwen3.5:4b + priors-v3` | `86.90%` | `96.92%` | `91.64%` | `89.19%` | `84.06%` | `98.33%` | `0.00%` | `1343.67 ms` |
+| `pure + qwen3.5:4b + priors-v4 + post-processing` | `93.84%` | `99.28%` | `96.48%` | `89.19%` | `98.55%` | `100.00%` | `0.00%` | `1483.13 ms` |
 
 Prompt-iteration takeaway:
 
 - The first prior-only prompt proved that common priors can eliminate negative-sample false positives, but it also over-suppressed real internal endpoints and work-account identifiers.
 - The second iteration (`priors-v2`) added stricter span rules, label-boundary guidance, and contrastive examples. On the same 60-sample corpus it outperformed the current `regex + qwen3.5:4b` hybrid reference on overall recall, precision, F1, contextual recall, and negative-sample false-positive behavior.
-- The main remaining hybrid advantage is deterministic recall: `regex + qwen3.5:4b` still reaches `88.41%` versus `81.16%` for `pure + qwen3.5:4b + priors-v2`.
+- The third and fourth prompt iterations (`priors-v3` and `priors-v4`) focused on label discipline for config/code samples, longest-span organization extraction, account-identifier disambiguation, and stricter JSON shape reminders.
+- A small deterministic post-processing layer then removed unsupported labels and nested `IP_ADDRESS` / `PORT` / `SENSITIVE_VALUE` spans when they were already covered by a `DATABASE_URL`.
+- That `priors-v4 + post-processing` combination is the current leader. It materially outperforms both the earlier pure-LLM variants and the old `regex + qwen3.5:4b` hybrid reference on overall recall, precision, F1, deterministic recall, and replacement-corruption count.
 - The later `2b` rerun also exposed a benchmark harness bug: the runner was only accepting `anchor_text`, while the shipped resolver already supports `anchor_text` or `text`. After aligning the runner with the product contract, `pure + qwen3.5:2b + priors-v2` recovered to a valid, but clearly weaker, fallback profile instead of the earlier all-zero false negative result.
 
 ## Current Conclusion
 
-- Default deep-filter strategy: `pure + qwen3.5:4b + priors-v2`
+- Default deep-filter strategy: `pure + qwen3.5:4b + priors-v4 + post-processing`
 - Product architecture decision:
   - Deep filtering should be LLM-led by default.
   - The broad `regex + LLM` merge should not be the default deep-filter path.
   - Regex remains valuable, but it should move to quick preview, deterministic fallback, and future selective validation instead of broad result merging.
 - Model recommendation:
   - Strong current default: `qwen3.5:4b`
-  - `qwen3.5:2b` can remain as a lower-cost fallback candidate under `priors-v2`, but it is materially weaker than `4b` on recall, contextual coverage, deterministic coverage, and replacement quality.
+  - `qwen3.5:2b` can remain as a lower-cost fallback candidate under the older `priors-v2` contract, but it is materially weaker than `4b` on recall, contextual coverage, deterministic coverage, and replacement quality.
   - `gemma4:e4b` remains a useful comparison target, but on the current corpus it trails the leading Qwen path and is more fragile on negative samples.
 - Product implication:
   - The app should keep the current regex fast path as a separate quick preview.
-  - The app should migrate deep filtering toward pure LLM extraction with guardrailed prompting.
+  - The app should migrate deep filtering toward pure LLM extraction with guardrailed prompting plus a narrow deterministic post-processing layer.
   - If production validation later shows that a few deterministic classes still need insurance, the next step should be selective validator-style regex checks, not a return to broad regex-first merging.
-  - On the current 60-sample corpus, the largest remaining misses are `NAME`, `ORG_NAME`, and `SENSITIVE_VALUE` label-shaping problems rather than classic regex-friendly formats. That means the next optimization step should favor prompt and post-processing refinement before adding any new validator regex layer.
+  - On the current 60-sample corpus, the remaining misses are concentrated in a small number of contextual person/address cases rather than broad deterministic blind spots. That means the next optimization step, if needed, should stay focused on prompt quality for mixed-language natural text rather than re-expanding regex.
 
 ## What This Does Not Mean
 

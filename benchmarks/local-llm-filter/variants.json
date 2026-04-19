@@ -69,6 +69,22 @@
       "use_regex_prefilter": false,
       "use_llm": true,
       "prompt_file": "prompts/extraction-prompt-priors-v2.md"
+    },
+    {
+      "id": "pure+qwen3.5:4b+priors-v3",
+      "kind": "llm",
+      "model": "qwen3.5:4b",
+      "use_regex_prefilter": false,
+      "use_llm": true,
+      "prompt_file": "prompts/extraction-prompt-priors-v3.md"
+    },
+    {
+      "id": "pure+qwen3.5:4b+priors-v4",
+      "kind": "llm",
+      "model": "qwen3.5:4b",
+      "use_regex_prefilter": false,
+      "use_llm": true,
+      "prompt_file": "prompts/extraction-prompt-priors-v4.md"
     }
   ]
 }

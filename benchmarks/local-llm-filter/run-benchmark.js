@@ -13,6 +13,28 @@ const DATASET_CATEGORIES = {
   contextual: new Set(['contextual', 'mixed-noisy']),
   deterministic: new Set(['deterministic', 'code-config-log']),
 };
+const ALLOWED_LABELS = new Set([
+  'NAME',
+  'ADDRESS',
+  'PHONE_NUMBER',
+  'EMAIL',
+  'ID_CARD',
+  'PASSPORT_NUMBER',
+  'BANK_CARD',
+  'WECHAT_ID',
+  'QQ_NUMBER',
+  'API_KEY',
+  'PUBLIC_KEY',
+  'SENSITIVE_VALUE',
+  'DATABASE_URL',
+  'DATABASE_CONFIG',
+  'IP_ADDRESS',
+  'PORT',
+  'API_ENDPOINT',
+  'CONFIG_VALUE',
+  'ORG_NAME',
+  'ACCOUNT_IDENTIFIER',
+]);
 
 const sanitizeVariantId = (value) => value.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
 
@@ -217,6 +239,30 @@ const resolveLlmFindings = (text, findings) => {
   }
 
   return { resolved, unresolved };
+};
+
+const findingContains = (parent, child) =>
+  parent.start <= child.start && child.end <= parent.end;
+
+const postProcessResolvedFindings = (resolved) => {
+  const databaseUrls = resolved.filter((finding) => finding.label === 'DATABASE_URL');
+
+  return resolved.filter((finding) => {
+    if (!ALLOWED_LABELS.has(finding.label)) {
+      return false;
+    }
+
+    if (!['IP_ADDRESS', 'PORT', 'SENSITIVE_VALUE'].includes(finding.label)) {
+      return true;
+    }
+
+    return !databaseUrls.some(
+      (databaseUrl) =>
+        databaseUrl.text !== finding.text &&
+        finding.label !== 'DATABASE_URL' &&
+        findingContains(databaseUrl, finding)
+    );
+  });
 };
 
 const dedupeSpans = (spans) => {
@@ -441,7 +487,7 @@ const runVariant = async ({ variant, samples, provider, runtime }) => {
 
     const analysis = await provider.analyzeText(sample.text, variant, runtime);
     const { resolved, unresolved } = resolveLlmFindings(sample.text, analysis.findings);
-    const merged = dedupeSpans([...regexResolved, ...resolved]);
+    const merged = dedupeSpans([...regexResolved, ...postProcessResolvedFindings(resolved)]);
     const providerDebug = {
       request_timeout_ms: variant.timeout_ms ?? runtime.timeout_ms ?? 30000,
       think: variant.think ?? runtime.think ?? false,

@@ -93,14 +93,15 @@
 - 2026-04-19T09:52:00Z miss-pattern review on the current `pure + qwen3.5:4b + priors-v2` result showed that the largest remaining gaps are `NAME`, `ORG_NAME`, and `SENSITIVE_VALUE` label-shaping issues rather than classic regex-friendly formats, so immediate effort should bias toward prompt and post-processing refinement instead of expanding a validator regex layer
 - 2026-04-19T10:38:00Z desktop verification on the real Tauri window exposed a frontend preview corruption bug even though the model findings themselves were correct; the root cause was a Rust-byte-offset to JavaScript-string-index mismatch in reviewed findings, which was fixed by serializing UTF-16-safe `start/end` values to the frontend while keeping byte offsets for Rust-side replacement, and the same mixed sample then verified cleanly in the UI with 4 hits, 0 unresolved findings, correct placeholder preservation, and a clean copied deep-filter result
 - 2026-04-19T11:02:00Z targeted regression coverage was added for the shipped deep-filter path: a new frontend utility test suite now locks default selection, deselection, and Chinese preview/application behavior under `node --test`, while Rust unit tests now cover fenced-JSON parsing, unsupported-provider failure messaging, prompt parsing, confidence-threshold behavior, and UTF-16-safe preview offsets
+- 2026-04-19T11:28:00Z a final prompt-plus-post-processing optimization pass was benchmarked on the 60-sample pause-point corpus; `pure + qwen3.5:4b + priors-v4 + post-processing` became the new leader with 96.48% F1, 93.84% recall, 99.28% precision, 98.55% deterministic recall, 100.00% parse success, 0.00% negative-sample false-positive rate, and only one remaining false-positive span across the full corpus
 
 ## 8. Execution Handoff (Optional)
 - Current focus:
-  Add the remaining tests/documentation around the new `priors-v2` deep-filter default, then tighten prompt and post-processing around `NAME`, `ORG_NAME`, and `SENSITIVE_VALUE`.
+  Keep the shipped deep-filter default aligned with the benchmark-backed `priors-v4 + post-processing` path, then treat any further tuning as incremental quality work instead of baseline architecture work.
 - Blockers:
-  The shipped deep-filter path still lacks broader tests for end-to-end review/apply behavior and failure handling, and the remaining accuracy gap is now concentrated in semantic labels that are not easy to rescue with regex alone.
+  The shipped deep-filter path still lacks broader automated end-to-end UI coverage and a larger-than-60-sample release corpus, but the core model/strategy decision itself is no longer the main blocker.
 - Next resume action:
-  Add tests for the review/apply flow and failure handling, then refine prompt and post-processing for `NAME`, `ORG_NAME`, and `SENSITIVE_VALUE` before revisiting whether any selective regex validator is still necessary.
+  Keep the product default on `priors-v4 + post-processing`, refresh docs/setup guidance if needed, and only reopen prompt work if new evaluation samples show regressions that matter in real use.
 - Evidence pointers:
   `src/components/TextFilter/index.jsx`
   `src/components/TextFilter/privacyRules.js`
@@ -111,4 +112,4 @@
   `benchmarks/local-llm-filter/results/full-benchmark-20260419-think-false.summary.md`
   `benchmarks/local-llm-filter/results/full-benchmark-20260419-22samples.summary.md`
 - Updated at:
-  2026-04-19T11:02:00Z
+  2026-04-19T11:28:00Z

@@ -20,6 +20,8 @@ Compare these variants under the same runtime and scoring rules:
 - `pure + qwen3.5:4b`
 - `pure + qwen3.5:4b + priors`
 - `pure + qwen3.5:4b + priors-v2`
+- `pure + qwen3.5:4b + priors-v3`
+- `pure + qwen3.5:4b + priors-v4`
 
 The benchmark is designed to answer four questions:
 
@@ -114,13 +116,17 @@ Current starter-set reference runs:
 - `benchmarks/local-llm-filter/results/full-benchmark-20260419-60samples.summary.md`
 - `benchmarks/local-llm-filter/results/pure-llm-priors-v2-20260419.summary.md`
 - `benchmarks/local-llm-filter/results/pure-qwen-fallback-priors-v2-20260419-rerun.summary.md`
+- `benchmarks/local-llm-filter/results/pure-qwen-priors-v2-v3-20260419.summary.md`
+- `benchmarks/local-llm-filter/results/pure-qwen-priors-v3-v4-20260419.summary.md`
+- `benchmarks/local-llm-filter/results/pure-qwen-priors-v2-v4-postprocess-20260419.summary.md`
 
 Current pause-point leader under the production-like Ollama request shape:
 
-- `pure + qwen3.5:4b + priors-v2`
+- `pure + qwen3.5:4b + priors-v4 + post-processing`
 
 The current repo starter set contains `60` samples. This is a reasonable pause point for model-selection work: the next step is no longer "blindly add more samples", but to implement the chosen deep-filter strategy and then resume expansion toward the 140-sample decision target if the product needs a stronger evidence bar before release.
 
 Implementation note:
 
 - The benchmark runner now resolves model findings from either `anchor_text` or `text`, matching the shipped Rust resolver contract. This matters for smaller models such as `qwen3.5:2b`, which sometimes omit `anchor_text` but still return usable exact spans in `text`.
+- The benchmark runner also applies a small deterministic post-processing layer before scoring: unsupported labels are dropped, and nested `IP_ADDRESS` / `PORT` / `SENSITIVE_VALUE` spans are removed when a `DATABASE_URL` already covers the same DSN. The shipped Rust backend now mirrors this behavior.
