@@ -20,7 +20,7 @@ The current repo starter set contains `60` labeled samples.
 
 The benchmark corpus lives in `samples.jsonl`.
 Each line is one JSON object.
-For cross-shell stability, the checked-in JSONL uses ASCII-safe `\\u` escapes for non-ASCII text.
+The checked-in JSONL uses UTF-8 directly so Chinese and mixed-language samples remain human-readable in the repo.
 
 Required fields:
 

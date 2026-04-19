@@ -1,10 +1,11 @@
 # Documentation Index
 
-This directory contains project-facing documentation and working notes.
+This directory holds the longer-form docs behind the project, plus a few working notes that are useful during development.
 
 ## User and maintainer docs
 
 - [Local LLM Evaluation](local-llm-evaluation.md): current benchmark-backed recommendation and tradeoff summary
+- [Project Roadmap](../ROADMAP.md): planned product and platform evolution
 
 ## Planning docs
 
@@ -17,4 +18,4 @@ Benchmark assets live outside this directory under [`benchmarks/local-llm-filter
 
 ## Notes
 
-Planning documents are maintained as living implementation records. User-facing how-to guidance should stay in the root `README.md` unless a dedicated guide becomes large enough to deserve its own file.
+Planning documents are kept as living implementation records. User-facing setup and usage guidance should usually stay in the root `README.md`, unless a topic grows large enough to deserve its own guide.

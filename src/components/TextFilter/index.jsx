@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useDeferredValue, useEffect, useState } from 'react';
 import {
   CheckCheck,
   Copy,
@@ -155,6 +155,8 @@ const TextFilter = () => {
   const [deepFilterResult, setDeepFilterResult] = useState(null);
   const [selectedFindingKeys, setSelectedFindingKeys] = useState({});
   const [compactReviewMode, setCompactReviewMode] = useState(true);
+  const [isInputComposing, setIsInputComposing] = useState(false);
+  const deferredInputText = useDeferredValue(inputText);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -182,10 +184,18 @@ const TextFilter = () => {
   }, []);
 
   useEffect(() => {
-    setFilteredText(applyRules(inputText, activeRules, customRules));
-  }, [inputText, activeRules, customRules]);
+    if (isInputComposing) {
+      return;
+    }
+
+    setFilteredText(applyRules(deferredInputText, activeRules, customRules));
+  }, [deferredInputText, activeRules, customRules, isInputComposing]);
 
   useEffect(() => {
+    if (isInputComposing) {
+      return;
+    }
+
     setDeepFilterStatus('idle');
     setDeepFilterError('');
     setDeepFilterResult(null);
@@ -198,6 +208,7 @@ const TextFilter = () => {
     llmConfig.timeout_ms,
     llmConfig.think,
     llmConfig.confidence_threshold,
+    isInputComposing,
   ]);
 
   useEffect(() => {
@@ -303,6 +314,19 @@ const TextFilter = () => {
     } catch (error) {
       console.error('复制失败:', error);
     }
+  };
+
+  const handleInputChange = (event) => {
+    setInputText(event.target.value);
+  };
+
+  const handleInputCompositionStart = () => {
+    setIsInputComposing(true);
+  };
+
+  const handleInputCompositionEnd = (event) => {
+    setIsInputComposing(false);
+    setInputText(event.currentTarget.value);
   };
 
   const handleRunDeepFilter = async () => {
@@ -516,7 +540,9 @@ const TextFilter = () => {
             <textarea
               className="min-h-[380px] flex-1 rounded-[24px] border border-slate-200/80 bg-white/80 px-4 py-4 text-slate-800 shadow-inner outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-100 resize-none"
               value={inputText}
-              onChange={(event) => setInputText(event.target.value)}
+              onChange={handleInputChange}
+              onCompositionStart={handleInputCompositionStart}
+              onCompositionEnd={handleInputCompositionEnd}
               placeholder="在这里输入需要过滤的文本..."
             />
           </section>

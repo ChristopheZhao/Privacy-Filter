@@ -1,76 +1,179 @@
 # Privacy Filter
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Privacy Filter is a desktop application for removing sensitive information from text while preserving readable context. It is designed for prompt sanitization, log sharing, issue reports, and document cleanup, with all filtering performed locally.
+
+## Why This Project Exists
+
+Online LLM tools are useful, but the text people send to them often contains private or internal information such as names, contact details, credentials, logs, and support context. Privacy Filter exists to add a local sanitization step before that text leaves the machine.
+
+The project combines:
+
+- rule-based filtering for high-confidence structured secrets
+- local-LLM filtering for contextual privacy detection
+- a review step before the cleaned text is copied or shared
+
+## Filtering Modes
+
+Privacy Filter provides two filtering modes.
+
+### 1. Rule mode
+
+Suitable for structured, high-confidence patterns such as:
+
+- email addresses
+- phone numbers
+- database URLs
+- API keys and obvious credentials
+
+Properties:
+
+- no Ollama required
+- no local model required
+- CPU-only is fine
+- best for quick masking and fallback behavior
+
+In the current UI, this section is labeled `规则快速预览`.
+
+### 2. Deep filter mode
+
+Suitable for contextual detection of items such as:
+
+- names in natural language
+- addresses
+- organization names
+- work-account identifiers
+- mixed code, config, and prose samples where regex alone is too brittle
+
+Properties:
+
+- requires a local LLM runtime
+- currently defaults to `ollama + qwen3.5:4b`
+- returns reviewable findings instead of silently rewriting the whole text
+- works best when a dedicated GPU is available
 
 ## Highlights
 
 - Local-only filtering pipeline
-- Fast built-in regex preview for high-confidence patterns
+- Fast built-in rule-based filtering for high-confidence patterns
 - Deep filtering powered by a local LLM
+- Provider-based local runtime configuration for future model/runtime expansion
 - Review-and-apply workflow for individual deep-filter findings
 - Tauri desktop app with React UI and Rust backend
 - Benchmark assets for evaluating local-model choices
 
-## Current Local LLM Direction
+## Default Local LLM Setup
 
-The project is intentionally designed to support multiple local providers over time. The current first working provider is `ollama`, but the app configuration keeps `provider`, `base_url`, `model`, timeout, and threshold settings configurable.
+Reference benchmark snapshot on the `60`-sample starter corpus:
 
-Current benchmark-backed recommendation on the `60`-sample starter corpus:
+| Variant | Recall | Precision | F1 | Negative FP Rate | Avg Latency |
+| --- | --- | --- | --- | --- | --- |
+| `regex + qwen3.5:4b` | `72.73%` | `72.73%` | `72.73%` | `18.18%` | `1208.10 ms` |
+| `regex + gemma4:e4b` | `67.13%` | `69.06%` | `68.09%` | `54.55%` | `1556.00 ms` |
+| `pure + qwen3.5:2b + priors-v2` | `57.34%` | `78.85%` | `66.40%` | `0.00%` | `715.90 ms` |
+| `pure + qwen3.5:4b + priors-v4 + post-processing` | `93.84%` | `99.28%` | `96.48%` | `0.00%` | `1483.13 ms` |
 
-- Default deep-filter strategy: `pure + qwen3.5:4b + priors-v4 + post-processing`
-- Recommended default model: `qwen3.5:4b`
-- Lower-cost fallback candidate: `qwen3.5:2b`
-- Regex remains available for quick preview and fallback, but it is no longer the preferred deep-filter direction
+Application defaults:
+
+- provider: `ollama`
+- model: `qwen3.5:4b`
+- deep-filter implementation: `pure + qwen3.5:4b + priors-v4 + post-processing`
+- lower-cost fallback to try first: `qwen3.5:2b`
+
+To change the provider or model:
+
+1. Open `规则设置`
+2. Go to the `本地 LLM` tab
+3. Change `provider`, `base_url`, or `model`
+4. If you switch to a new Ollama model, pull it first with `ollama pull <model>`
+5. Run deep filter again
+
+The prompt contract and post-processing used by the current default strategy are built into the app. In normal usage, configuration changes are limited to the provider, endpoint, and model.
 
 Reference material:
 
 - [Local LLM Evaluation](docs/local-llm-evaluation.md)
 - [Benchmark README](benchmarks/local-llm-filter/README.md)
 - [Documentation Index](docs/README.md)
+- [Roadmap](ROADMAP.md)
 
 ## Installation
 
 ### End users
 
-The recommended path is to download a packaged release from GitHub Releases when one is available.
+If a packaged release is available, that is the simplest way to use the app.
 
 ### Developers
 
-#### Prerequisites
+#### Common requirements
 
 - Node.js 18+
 - Rust toolchain
 - Tauri build dependencies for your platform
-- A local LLM runtime if you want to use deep filtering, currently `ollama`
 
 For WSL or Linux desktop development, you also need the usual Tauri GUI dependencies, including GTK/WebKit-related packages.
 
-#### Install dependencies
+#### Common setup
 
 ```bash
 npm install
 ```
 
-#### Start the web app
+#### Rule mode only
 
-```bash
-npm run dev
-```
-
-#### Start the desktop app
+This path uses the built-in rule set only. No local LLM runtime is required.
 
 ```bash
 npm run dev:tauri
 ```
 
-#### Build the app
+#### Deep filter mode
+
+This path requires a local LLM runtime. The current default is `ollama + qwen3.5:4b`.
+
+1. Install Ollama
+2. Pull the recommended model and start the local runtime:
+
+```bash
+ollama pull qwen3.5:4b
+ollama serve
+```
+
+3. Start the app:
+
+```bash
+npm run dev:tauri
+```
+
+4. In the app, open `规则设置` -> `本地 LLM`, then confirm:
+
+- `provider = ollama`
+- `model = qwen3.5:4b`
+- `base_url = http://127.0.0.1:11434`
+
+#### Common commands
+
+Start the web app:
+
+```bash
+npm run dev
+```
+
+Start the desktop app:
+
+```bash
+npm run dev:tauri
+```
+
+Build the app:
 
 ```bash
 npm run build
 npm run build:tauri
 ```
 
-#### Run tests
+Run tests:
 
 ```bash
 npm run test:deep-filter
@@ -80,28 +183,70 @@ npm run test:deep-filter
 cargo test --lib --manifest-path src-tauri/Cargo.toml
 ```
 
-#### Run the local LLM benchmark
+Run the local LLM benchmark:
 
 ```bash
 npm run bench:local-llm-filter
 ```
 
-## Local LLM Setup
+## Deep Filter Runtime Notes
 
-Typical local setup with Ollama:
+### Hardware guidance
 
-```bash
-ollama pull qwen3.5:4b
-ollama serve
-```
+These recommendations are based on the current default model, the benchmark results in this repository, and Ollama's published model sizes. They are project guidance, not official minimum requirements from the model or runtime vendors.
 
-Default local endpoint:
+For rule mode:
+
+- recommended: any modern CPU
+- recommended memory: `8 GB RAM` or more
+- GPU: not required
+
+For deep filter with `qwen3.5:4b`:
+
+- recommended: a dedicated GPU is preferred
+- recommended GPU: `8 GB VRAM` or more
+- recommended system memory: `16 GB RAM` or more
+- workable fallback: CPU-only with `16 GB RAM`, but expect noticeably slower latency
+
+For the lighter `qwen3.5:2b` fallback:
+
+- recommended GPU: `4 GB to 6 GB VRAM`
+- recommended system memory: `8 GB to 16 GB RAM`
+- use this only when `4b` is too slow or does not fit well
+
+For storage:
+
+- Ollama's Windows docs note that the install itself needs additional disk space and that model storage can grow from tens to hundreds of GB depending on what you pull
+- the current Ollama `qwen3.5:4b` tag is listed at about `3.4 GB`
+
+In short:
+
+- prefer GPU when available
+- prefer `qwen3.5:4b` as the default quality/performance balance
+- fall back to `qwen3.5:2b` only for lower-end local machines
+
+### Windows and WSL note
+
+`127.0.0.1` only works when the app and Ollama are running in the same environment.
+
+Common cases:
+
+- Windows app + Ollama on Windows: `http://127.0.0.1:11434` usually works
+- WSL app + Ollama in WSL: `http://127.0.0.1:11434` usually works
+- WSL app + Ollama on Windows: `127.0.0.1` may fail because WSL localhost is not the Windows host localhost
+
+If deep filter shows an error like:
 
 ```text
-http://127.0.0.1:11434
+error sending request for url (http://127.0.0.1:11434/api/tags)
 ```
 
-The app persists local-LLM settings through Tauri commands such as `load_config`, `save_config`, `llm_healthcheck`, and `analyze_text`.
+work through these in order:
+
+1. Is Ollama actually running?
+2. Did `ollama pull qwen3.5:4b` finish successfully?
+3. Is the app running in Windows or in WSL?
+4. Does `base_url` point to the same environment where Ollama is running?
 
 ## Project Structure
 
@@ -129,6 +274,17 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ### WSL desktop startup issues
 
 If `npm run dev:tauri` starts the frontend but the desktop app fails to launch in WSL, verify that your GUI stack and Tauri runtime dependencies are installed and that your local display environment is working.
+
+### Deep filter cannot reach Ollama
+
+If rule preview works but deep filter fails, the most common cause is that the app cannot reach the Ollama API endpoint.
+
+Quick checks:
+
+- open `http://127.0.0.1:11434/api/tags` from the same environment where the app is running
+- confirm the selected `base_url` matches that environment
+- confirm `ollama serve` is still running
+- confirm the target model appears in `ollama list`
 
 ## Language Support
 
